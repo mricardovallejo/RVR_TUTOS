@@ -1,0 +1,177 @@
+GITLab - https://docs.gitlab.com/ee/README.html
+======
+
+1) Register to GITLab or install Omnibus Gitlab
+		Omnibus GitLab: contains a bundle of GitLab and the components it depends on, including PostgreSQL, Redis.
+		All Cloud providers supports
+
+2) Create a project
+
+	https://docs.gitlab.com/ee/ci/introduction/
+	https://docs.gitlab.com/ee/ci/yaml/#keyword-reference-for-the-gitlab-ciyml-file
+	https://docs.gitlab.com/ee/ci/pipelines/pipeline_architectures.html
+	
+
+3) Install Gitlab Runner and register a runner
+
+	Runners are isolated virtual machines that run predefined steps through the GitLab CI API. This tool, alone, 
+	allows for projects to run through the pipeline builds faster, compared to running on a single instance.
+	
+	https://docs.gitlab.com/runner/
+	
+	
+4) Intro a CICD GitLab
+
+CI / CD  - Example:  https://docs.gitlab.com/ee/ci/quick_start/
+
+For example we build 3 pipelines:	
+
+	Project Pipeline: installs dependencies, runs linters and any scripts that deal with the code. ####TODO:  Link to list of features by categorie
+
+	Continuous Integration Pipeline: runs automated tests and builds a distributed version of the code. 
+
+	Deploy Pipeline: deploys code to a designated cloud provider and environment.
+	
+	Jobs:  The steps that the three pipelines execute are called jobs. 	
+	Stages:  When you group a series of jobs by those characteristics it is called stages.
+			 Jobs are the basic building block for pipelines. 
+			 They can be grouped together in stages and stages can be grouped together into pipelines. 
+
+	A.) Build
+	 i. Install NPM Dependencies
+	 ii. Run ES-Linter
+	 iii. Run Code-Minifier
+	B.) Test
+	 i. Run unit, functional and end-to-end test.
+	 ii. Run pkg to compile Node.js application
+	C.) Deploy
+	 i. Production
+	 1.) Launch EC2 instance on AWS
+	 ii. Staging
+	 1.) Launch on local development server
+
+	stages: build, test, and deploy are stages
+	jobs:   each bullet under those sections are jobs
+
+	Using .gitlab-ci.yml  -- https://docs.gitlab.com/ee/ci/quick_start/
+	--------------------
+	
+	image: node:10.5.0                   # Our Runner to be based off by using the image directive.
+		stages:							 # The stages directive allows us to predefine a stage for the entire configuration.  Stages = Gruop of jogs
+			 — build
+			 — test
+			 — deploy
+		before_script:
+			 — npm install
+			 
+	If no stages are defined in the .gitlab-ci.yml file, then build, test and deploy are the default pipeline stages.
+	
+	https://docs.gitlab.com/ee/ci/yaml/#keyword-reference-for-the-gitlab-ciyml-file
+	https://docs.gitlab.com/ee/ci/pipelines/pipeline_architectures.html
+	
+	
+	Workflow - https://docs.gitlab.com/ee/ci/yaml/#workflow
+			
+		Example rules	Details
+				if: '$CI_PIPELINE_SOURCE == "merge_request_event"'	Control when merge request pipelines run.
+				if: '$CI_PIPELINE_SOURCE == "push"'					Control when both branch pipelines and tag pipelines run.
+		
+	Variables: 
+		- BUILD_ROOT_DIR: '${CI_BUILDS_DIR}'
+		- OUT_PATH: '${BUILD_ROOT_DIR}/out'
+		- PACKAGE_PATH: '${OUT_PATH}/pkg'		
+		-----	
+			
+		variables:   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+		  DEPLOY_VARIABLE: "default-deploy"
+		  CI_DEBUG_TRACE: true
+		  CI_DEFAULT_BRANCH	>The name of the project’s default branch.
+		  $GITLAB_USER_LOGIN and $CI_COMMIT_BRANCH are predefined variables that populate when the job runs
+
+		workflow:
+			  rules:
+				- if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+				  variables:
+					DEPLOY_VARIABLE: "deploy-production"  # Override globally-defined DEPLOY_VARIABLE
+				- if: $CI_COMMIT_REF_NAME =~ /feature/
+				  variables:
+					IS_A_FEATURE: "true"                  # Define a new variable.
+				- when: always                            # Run the pipeline in other cases                        
+
+			  job1:
+				  variables:
+					DEPLOY_VARIABLE: "job1-default-deploy"
+				  rules:
+					- if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+					  variables:                                   # Override DEPLOY_VARIABLE defined
+						DEPLOY_VARIABLE: "job1-deploy-production"  # at the job level.
+					- when: on_success                             # Run the job in other cases
+				  script:
+					- echo "Run script with $DEPLOY_VARIABLE as an argument"
+					- echo "Run another script if $IS_A_FEATURE exists"
+		
+		Example: For the Filename, type .gitlab-ci.yml 
+		
+			default:                         >>>  This command tells the runner to use a Ruby image from Docker Hub and to run the jobs in a container that’s generated from the image
+				image: ruby:2.6              >>>> image: <image-name>:<tag>
+
+			services:
+			 	postgres:11.7
+
+			before_script:
+			 	bundle install
+
+			build-job:
+			  stage: build
+			  script:
+				- echo "Hello, $GITLAB_USER_LOGIN!"
+
+			test-job1:
+			  stage: test
+			  script:
+				- echo "This job tests something"
+
+			test-job2:
+			  stage: test
+			  script:
+				- echo "This job tests something, but takes more time than test-job1."
+				- echo "After the echo commands complete, it runs the sleep command for 20 seconds"
+				- echo "which simulates a test that runs 20 seconds longer than test-job1"
+				- sleep 20
+
+			deploy-prod:
+			  stage: deploy
+			  script:
+				- echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
+		
+        -------
+		
+		Running test python manually:
+			python -m unittest helloTest.py
+			
+		To define Credentials Windows
+		alternatively you can use the shortcut control /name Microsoft.CredentialManager in the run dialog (WIN+R)
+		-------
+		
+		image: "python:3.7"
+
+		before_script:
+		  - python --version
+		  - pip install -r requirements.txt
+
+		stages:
+		  - Static Analysis
+		  - Test
+
+		pylint:
+		  stage: Static Analysis
+		  script:
+		  - pylint -d C0301 src/*.py
+
+		pytest:
+		  stage: Test
+		  script:
+		  - cd test/;pytest -v
+				
+		
+		
